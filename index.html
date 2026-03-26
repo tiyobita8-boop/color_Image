@@ -7,139 +7,176 @@
 <style>
 body { font-family: "メイリオ", sans-serif; text-align:center; }
 
-.container {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  width: 420px;
-  margin: 0 auto;
-  text-align: left;
+.container{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:6px;
+  width:420px;
+  margin:0 auto;
+  text-align:left;
 }
 
-label { padding: 3px; }
-label:hover { background:#eee; cursor:pointer; }
+label{padding:3px;}
+label:hover{background:#eee;cursor:pointer;}
 
-canvas { border:1px solid #ccc; margin-top:20px; }
+canvas{border:1px solid #ccc;margin-top:20px;}
 </style>
 
 </head>
 <body>
 
 <h2>イメージ選択</h2>
-<div class="container" id="checkboxes"></div>
+<div class="container" id="box"></div>
 
 <br>
 
 <button onclick="analyze()">分析する</button>
 
 <div style="margin-top:10px;">
-  ソフト（＋）⇔ハード（－）（y軸）<br>
-  ウォーム（－）⇔クール（＋）（x軸）
+ソフト（＋）⇔ハード（－）（y軸）<br>
+ウォーム（－）⇔クール（＋）（x軸）
 </div>
 
 <h3 id="result"></h3>
-
 <canvas id="chart" width="300" height="300"></canvas>
 
 <script>
 
 // ワード
-const words = [
+const words=[
 "甘い","かわいい","ロマンチックな","可憐な","清楚な","さわやかな","やさしい","ゆったりとした","みずみずしい","うるおいのある",
 "元気な","楽しい","優美な","エレガントな","若々しい","スポーティな","洗練された","知的な","情熱的な","ドラマチックな",
 "魅惑的な","艶っぽい","野性的な","エスニックな","高級な","本格的な","りりしい","マニッシュな","正統な","気高い",
 "シャープな","モダンな"
 ];
 
-// 分類辞書（y,x）
-const map = {
-  "甘い":{y:1,x:1},"かわいい":{y:1,x:1},"ロマンチックな":{y:1,x:1},"可憐な":{y:1,x:1},
-  "清楚な":{y:1,x:0},"やさしい":{y:1,x:1},"ゆったりとした":{y:1,x:0},
-  "みずみずしい":{y:1,x:1},"うるおいのある":{y:1,x:1},
+// 対応表（完全版）
+const map={
+"甘い":{x:1,y:1,type:"ソフト"},
+"かわいい":{x:1,y:1,type:"ソフト"},
+"ロマンチックな":{x:1,y:1,type:"ソフト"},
+"可憐な":{x:1,y:1,type:"ソフト"},
 
-  "元気な":{y:0,x:1},"楽しい":{y:0,x:1},"情熱的な":{y:0,x:1},
-  "野性的な":{y:-1,x:1},"エスニックな":{y:-1,x:1},
+"清楚な":{x:-2,y:0,type:"中間"},
+"さわやかな":{x:-2,y:0,type:"中間"},
 
-  "シャープな":{y:-1,x:-1},"モダンな":{y:-1,x:-1},
-  "知的な":{y:-1,x:-1},"洗練された":{y:-1,x:-1},
+"やさしい":{x:1,y:0,type:"中間"},
+"ゆったりとした":{x:1,y:0,type:"中間"},
 
-  "エレガントな":{y:0,x:0},"優美な":{y:0,x:0},"高級な":{y:0,x:0},
+"みずみずしい":{x:-1,y:0,type:"中間"},
+"うるおいのある":{x:-1,y:0,type:"中間"},
 
-  "りりしい":{y:-1,x:0},"マニッシュな":{y:-1,x:0},
-  "正統な":{y:0,x:0},"気高い":{y:0,x:0},
+"元気な":{x:0,y:0,type:"中間"},
+"楽しい":{x:0,y:0,type:"中間"},
 
-  "ドラマチックな":{y:-1,x:1},"魅惑的な":{y:-1,x:1},"艶っぽい":{y:-1,x:1},
+"優美な":{x:2,y:-2,type:"中間"},
+"エレガントな":{x:2,y:-2,type:"中間"},
 
-  "スポーティな":{y:0,x:1},"若々しい":{y:1,x:1},
-  "さわやかな":{y:0,x:-1}
+"若々しい":{x:-1,y:0,type:"中間"},
+"スポーティな":{x:-1,y:0,type:"中間"},
+
+"洗練された":{x:-1,y:0,type:"中間"},
+"知的な":{x:-1,y:0,type:"中間"},
+
+"情熱的な":{x:1,y:0,type:"ハード"},
+"ドラマチックな":{x:1,y:0,type:"ハード"},
+
+"魅惑的な":{x:1,y:-1,type:"ハード"},
+"艶っぽい":{x:1,y:-1,type:"ハード"},
+
+"野性的な":{x:1,y:-1,type:"ハード"},
+"エスニックな":{x:1,y:-1,type:"ハード"},
+
+"高級な":{x:2,y:-3,type:"ハード"},
+"本格的な":{x:2,y:-3,type:"ハード"},
+"りりしい":{x:2,y:-3,type:"ハード"},
+"マニッシュな":{x:2,y:-3,type:"ハード"},
+"正統な":{x:2,y:-3,type:"ハード"},
+"気高い":{x:2,y:-3,type:"ハード"},
+
+"シャープな":{x:-2,y:0,type:"ハード"},
+"モダンな":{x:-2,y:0,type:"ハード"}
 };
 
-// チェック生成
-const container = document.getElementById("checkboxes");
+// UI生成
+const box=document.getElementById("box");
 words.forEach(w=>{
-  const label = document.createElement("label");
-  label.innerHTML = `<input type="checkbox" value="${w}"> ${w}`;
-  container.appendChild(label);
+  const l=document.createElement("label");
+  l.innerHTML=`<input type="checkbox" value="${w}"> ${w}`;
+  box.appendChild(l);
 });
 
+// 分析
 function analyze(){
 
-  const checked = document.querySelectorAll("input:checked");
+let hard=0,soft=0,midHS=0;
+let warm=0,cool=0,midWC=0;
 
-  let hard=0,soft=0,midHS=0;
-  let warm=0,cool=0,midWC=0;
+let x=0,y=0;
 
-  let xSum=0,ySum=0;
+document.querySelectorAll("input:checked").forEach(c=>{
+  const v=map[c.value];
 
-  checked.forEach(c=>{
-    const w = c.value;
-    const v = map[w] || {y:0,x:0};
+  x+=v.x;
+  y+=v.y;
 
-    ySum += v.y;
-    xSum += v.x;
+  if(v.type==="ハード") hard++;
+  else if(v.type==="ソフト") soft++;
+  else midHS++;
 
-    if(v.y===1) soft++;
-    else if(v.y===-1) hard++;
-    else midHS++;
+  if(v.x>0) warm++;
+  else if(v.x<0) cool++;
+  else midWC++;
+});
 
-    if(v.x===1) warm++;
-    else if(v.x===-1) cool++;
-    else midWC++;
-  });
+// 判定
+let hs = y>0?"ソフトより":y<0?"ハードより":"中間";
+let wc = x>0?"ウォームより":x<0?"クールより":"中間";
 
-  // 判定
-  let hsType = ySum > 0 ? "ソフトより" : ySum < 0 ? "ハードより" : "中間";
-  let wcType = xSum < 0 ? "クールより" : xSum > 0 ? "ウォームより" : "中間";
+// 表示
+document.getElementById("result").innerHTML=
+`ハードの数:${hard}
+ソフトの数:${soft}
+ウォームの数:${warm}
+クールの数:${cool}
+ソフトとハードの中間:${midHS}
+ウォームとクールの中間:${midWC}
 
-  document.getElementById("result").innerHTML =
-  `ハード:${hard} ソフト:${soft} ウォーム:${warm} クール:${cool}<br>
-   中間HS:${midHS} 中間WC:${midWC}<br>
-   x:${xSum} y:${ySum}<br>
-   派：${hsType}<br>
-   カラーイメージ：${wcType}`;
+xの数:${x} yの数:${y}
 
-  drawChart(xSum,ySum);
+派：${hs}
+カラーイメージ：${wc}`;
+
+// グラフ
+draw(x,y);
 }
 
-function drawChart(x,y){
+// 描画
+function draw(x,y){
 
-  const ctx = document.getElementById("chart").getContext("2d");
-  ctx.clearRect(0,0,300,300);
+const ctx=document.getElementById("chart").getContext("2d");
+ctx.clearRect(0,0,300,300);
 
-  // 軸
-  ctx.beginPath();
-  ctx.moveTo(150,0); ctx.lineTo(150,300);
-  ctx.moveTo(0,150); ctx.lineTo(300,150);
-  ctx.stroke();
+// 軸
+ctx.beginPath();
+ctx.moveTo(150,0);ctx.lineTo(150,300);
+ctx.moveTo(0,150);ctx.lineTo(300,150);
+ctx.stroke();
 
-  // スケール（±3）
-  let px = x * 40;
-  let py = y * 40;
+// 範囲制限（-3～+3）
+let nx=Math.max(-3,Math.min(3,x));
+let ny=Math.max(-3,Math.min(3,y));
 
-  ctx.fillStyle="red";
-  ctx.beginPath();
-  ctx.arc(150+px,150-py,6,0,Math.PI*2);
-  ctx.fill();
+// スケール
+let px=nx*40;
+let py=ny*40;
+
+// 点
+ctx.fillStyle="red";
+ctx.beginPath();
+ctx.arc(150+px,150-py,6,0,Math.PI*2);
+ctx.fill();
+
 }
 </script>
 
