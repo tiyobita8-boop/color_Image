@@ -5,52 +5,34 @@
 <title>カラーイメージ診断</title>
 
 <style>
-body {
-  font-family: "メイリオ", sans-serif;
-  text-align: center;
-}
+body { font-family: "メイリオ", sans-serif; text-align:center; }
 
 .container {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
   width: 420px;
   margin: 0 auto;
   text-align: left;
 }
 
-label {
-  display: block;
-  padding: 4px;
-}
+label { padding: 3px; }
+label:hover { background:#eee; cursor:pointer; }
 
-label:hover {
-  background: #f0f0f0;
-  cursor: pointer;
-}
-
-canvas {
-  border: 1px solid #ccc;
-  margin-top: 20px;
-}
+canvas { border:1px solid #ccc; margin-top:20px; }
 </style>
 
 </head>
-
 <body>
 
 <h2>イメージ選択</h2>
-
 <div class="container" id="checkboxes"></div>
 
 <br>
 
-<button onclick="analyze()" style="font-size:18px; padding:8px 16px;">
-  分析する
-</button>
+<button onclick="analyze()">分析する</button>
 
-<!-- ★軸説明（修正版） -->
-<div style="margin-top:10px; font-size:14px;">
+<div style="margin-top:10px;">
   ソフト（＋）⇔ハード（－）（y軸）<br>
   ウォーム（－）⇔クール（＋）（x軸）
 </div>
@@ -61,7 +43,7 @@ canvas {
 
 <script>
 
-// ワード一覧
+// ワード
 const words = [
 "甘い","かわいい","ロマンチックな","可憐な","清楚な","さわやかな","やさしい","ゆったりとした","みずみずしい","うるおいのある",
 "元気な","楽しい","優美な","エレガントな","若々しい","スポーティな","洗練された","知的な","情熱的な","ドラマチックな",
@@ -69,77 +51,96 @@ const words = [
 "シャープな","モダンな"
 ];
 
-// 分類ルール
-const softList = ["甘い","かわいい","ロマンチックな","可憐な","やさしい","ゆったりとした","みずみずしい","うるおいのある","清楚な"];
-const hardList = ["シャープな","モダンな","りりしい","マニッシュな","正統な","気高い","本格的な"];
-const middleHSList = ["エレガントな","優美な","高級な","洗練された","知的な"];
+// 分類辞書（y,x）
+const map = {
+  "甘い":{y:1,x:1},"かわいい":{y:1,x:1},"ロマンチックな":{y:1,x:1},"可憐な":{y:1,x:1},
+  "清楚な":{y:1,x:0},"やさしい":{y:1,x:1},"ゆったりとした":{y:1,x:0},
+  "みずみずしい":{y:1,x:1},"うるおいのある":{y:1,x:1},
 
-const warmList = ["甘い","かわいい","ロマンチックな","元気な","楽しい","情熱的な","野性的な","エスニックな"];
-const coolList = ["さわやかな","シャープな","モダンな","知的な","洗練された"];
-const middleWCList = ["エレガントな","優美な","高級な","正統な","気高い"];
+  "元気な":{y:0,x:1},"楽しい":{y:0,x:1},"情熱的な":{y:0,x:1},
+  "野性的な":{y:-1,x:1},"エスニックな":{y:-1,x:1},
 
-// チェックボックス生成
+  "シャープな":{y:-1,x:-1},"モダンな":{y:-1,x:-1},
+  "知的な":{y:-1,x:-1},"洗練された":{y:-1,x:-1},
+
+  "エレガントな":{y:0,x:0},"優美な":{y:0,x:0},"高級な":{y:0,x:0},
+
+  "りりしい":{y:-1,x:0},"マニッシュな":{y:-1,x:0},
+  "正統な":{y:0,x:0},"気高い":{y:0,x:0},
+
+  "ドラマチックな":{y:-1,x:1},"魅惑的な":{y:-1,x:1},"艶っぽい":{y:-1,x:1},
+
+  "スポーティな":{y:0,x:1},"若々しい":{y:1,x:1},
+  "さわやかな":{y:0,x:-1}
+};
+
+// チェック生成
 const container = document.getElementById("checkboxes");
-
-words.forEach(word => {
+words.forEach(w=>{
   const label = document.createElement("label");
-  label.innerHTML = `<input type="checkbox" value="${word}"> ${word}`;
+  label.innerHTML = `<input type="checkbox" value="${w}"> ${w}`;
   container.appendChild(label);
 });
 
-// 分析処理
-function analyze() {
+function analyze(){
 
   const checked = document.querySelectorAll("input:checked");
 
-  let hard=0, soft=0, middleHS=0;
-  let warm=0, cool=0, middleWC=0;
+  let hard=0,soft=0,midHS=0;
+  let warm=0,cool=0,midWC=0;
 
-  checked.forEach(item => {
-    const w = item.value;
+  let xSum=0,ySum=0;
 
-    if (softList.includes(w)) soft++;
-    else if (hardList.includes(w)) hard++;
-    else middleHS++;
+  checked.forEach(c=>{
+    const w = c.value;
+    const v = map[w] || {y:0,x:0};
 
-    if (warmList.includes(w)) warm++;
-    else if (coolList.includes(w)) cool++;
-    else middleWC++;
+    ySum += v.y;
+    xSum += v.x;
+
+    if(v.y===1) soft++;
+    else if(v.y===-1) hard++;
+    else midHS++;
+
+    if(v.x===1) warm++;
+    else if(v.x===-1) cool++;
+    else midWC++;
   });
 
-  document.getElementById("result").innerHTML =
-    `ハード:${hard} ソフト:${soft} 中間:${middleHS}<br>
-     ウォーム:${warm} クール:${cool} 中間:${middleWC}`;
+  // 判定
+  let hsType = ySum > 0 ? "ソフトより" : ySum < 0 ? "ハードより" : "中間";
+  let wcType = xSum < 0 ? "クールより" : xSum > 0 ? "ウォームより" : "中間";
 
-  drawChart(hard, soft, warm, cool);
+  document.getElementById("result").innerHTML =
+  `ハード:${hard} ソフト:${soft} ウォーム:${warm} クール:${cool}<br>
+   中間HS:${midHS} 中間WC:${midWC}<br>
+   x:${xSum} y:${ySum}<br>
+   派：${hsType}<br>
+   カラーイメージ：${wcType}`;
+
+  drawChart(xSum,ySum);
 }
 
-// グラフ描画（★ロジック修正済）
-function drawChart(hard, soft, warm, cool) {
+function drawChart(x,y){
 
-  const canvas = document.getElementById("chart");
-  const ctx = canvas.getContext("2d");
-
+  const ctx = document.getElementById("chart").getContext("2d");
   ctx.clearRect(0,0,300,300);
 
   // 軸
   ctx.beginPath();
-  ctx.moveTo(150,0);
-  ctx.lineTo(150,300);
-  ctx.moveTo(0,150);
-  ctx.lineTo(300,150);
+  ctx.moveTo(150,0); ctx.lineTo(150,300);
+  ctx.moveTo(0,150); ctx.lineTo(300,150);
   ctx.stroke();
 
-  // ★表示と一致させた計算
-  let x = (cool - warm) * 30;   // クール＋ / ウォーム－
-  let y = (soft - hard) * 30;   // ソフト＋ / ハード－
+  // スケール（±3）
+  let px = x * 40;
+  let py = y * 40;
 
-  ctx.fillStyle = "red";
+  ctx.fillStyle="red";
   ctx.beginPath();
-  ctx.arc(150 + x, 150 - y, 6, 0, Math.PI*2);
+  ctx.arc(150+px,150-py,6,0,Math.PI*2);
   ctx.fill();
 }
-
 </script>
 
 </body>
