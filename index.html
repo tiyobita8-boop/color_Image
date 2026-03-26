@@ -21,11 +21,11 @@ label:hover{background:#eee;cursor:pointer;}
 
 canvas{border:1px solid #ccc;margin-top:20px;}
 </style>
-
 </head>
+
 <body>
 
-<h2>イメージ選択</h2>
+<h2>イメージ選択（最大3つ）</h2>
 <div class="container" id="box"></div>
 
 <br>
@@ -50,7 +50,7 @@ const words=[
 "シャープな","モダンな"
 ];
 
-// 対応表（完全版）
+// 対応表
 const map={
 "甘い":{x:1,y:1,type:"ソフト"},
 "かわいい":{x:1,y:1,type:"ソフト"},
@@ -100,18 +100,27 @@ const map={
 
 // UI生成
 const box=document.getElementById("box");
+
 words.forEach(w=>{
   const l=document.createElement("label");
-  l.innerHTML=`<input type="checkbox" value="${w}"> ${w}`;
+  l.innerHTML=`<input type="checkbox" value="${w}" onchange="limitCheck(this)"> ${w}`;
   box.appendChild(l);
 });
+
+// 最大3制限
+function limitCheck(el){
+  const checked=document.querySelectorAll("input:checked");
+  if(checked.length>3){
+    el.checked=false;
+    alert("最大3つまで選択できます");
+  }
+}
 
 // 分析
 function analyze(){
 
 let hard=0,soft=0,midHS=0;
 let warm=0,cool=0,midWC=0;
-
 let x=0,y=0;
 
 document.querySelectorAll("input:checked").forEach(c=>{
@@ -129,29 +138,26 @@ document.querySelectorAll("input:checked").forEach(c=>{
   else midWC++;
 });
 
-// 判定
-let hs = y>0?"ソフトより":y<0?"ハードより":"中間";
-let wc = x>0?"ウォームより":x<0?"クールより":"中間";
+let hs=y>0?"ソフトより":y<0?"ハードより":"中間";
+let wc=x>0?"ウォームより":x<0?"クールより":"中間";
 
-// 表示
-document.getElementById("result").innerHTML=
-`ハードの数:${hard}
-ソフトの数:${soft}
-ウォームの数:${warm}
-クールの数:${cool}
-ソフトとハードの中間:${midHS}
-ウォームとクールの中間:${midWC}
+document.getElementById("result").innerText=
+`ハード:${hard}
+ソフト:${soft}
+ウォーム:${warm}
+クール:${cool}
+中間HS:${midHS}
+中間WC:${midWC}
 
-xの数:${x} yの数:${y}
+x:${x} y:${y}
 
 派：${hs}
 カラーイメージ：${wc}`;
 
-// グラフ
 draw(x,y);
 }
 
-// 描画
+// グラフ
 function draw(x,y){
 
 const ctx=document.getElementById("chart").getContext("2d");
@@ -163,21 +169,19 @@ ctx.moveTo(150,0);ctx.lineTo(150,300);
 ctx.moveTo(0,150);ctx.lineTo(300,150);
 ctx.stroke();
 
-// 範囲制限（-3～+3）
+// ±3制限
 let nx=Math.max(-3,Math.min(3,x));
 let ny=Math.max(-3,Math.min(3,y));
 
-// スケール
 let px=nx*40;
 let py=ny*40;
 
-// 点
 ctx.fillStyle="red";
 ctx.beginPath();
 ctx.arc(150+px,150-py,6,0,Math.PI*2);
 ctx.fill();
-
 }
+
 </script>
 
 </body>
