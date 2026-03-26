@@ -49,9 +49,10 @@ canvas {
   分析する
 </button>
 
-<!-- ★今回追加 -->
+<!-- ★軸説明（修正版） -->
 <div style="margin-top:10px; font-size:14px;">
-  ソフト⇔ハード（y軸） / ウォーム⇔クール（x軸）
+  ソフト（＋）⇔ハード（－）（y軸）<br>
+  ウォーム（－）⇔クール（＋）（x軸）
 </div>
 
 <h3 id="result"></h3>
@@ -113,7 +114,7 @@ function analyze() {
   drawChart(hard, soft, warm, cool);
 }
 
-// グラフ描画
+// グラフ描画（★ロジック修正済）
 function drawChart(hard, soft, warm, cool) {
 
   const canvas = document.getElementById("chart");
@@ -129,11 +130,10 @@ function drawChart(hard, soft, warm, cool) {
   ctx.lineTo(300,150);
   ctx.stroke();
 
-  // 座標計算
-  let x = (cool - warm) * 30;
-  let y = (hard - soft) * 30;
+  // ★表示と一致させた計算
+  let x = (cool - warm) * 30;   // クール＋ / ウォーム－
+  let y = (soft - hard) * 30;   // ソフト＋ / ハード－
 
-  // 点
   ctx.fillStyle = "red";
   ctx.beginPath();
   ctx.arc(150 + x, 150 - y, 6, 0, Math.PI*2);
