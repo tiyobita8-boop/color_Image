@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>カラー分類</title>
+<style>
+body { font-family: "メイリオ", sans-serif; text-align:center; }
+.container { text-align:left; display:inline-block; }
+canvas { border:1px solid #ccc; margin-top:20px; }
+</style>
+</head>
+
+<body>
+
+<h2>カラーイメージ選択</h2>
+
+<div class="container" id="checkboxes"></div>
+
+<br>
+<button onclick="analyze()">分析</button>
+
+<h3 id="result"></h3>
+<canvas id="chart" width="300" height="300"></canvas>
+
+<script>
+// チェックボックス用ワード
+const words = [
+"甘い","かわいい","ロマンチックな","可憐な","清楚な","さわやかな","やさしい","ゆったりとした","みずみずしい","うるおいのある",
+"元気な","楽しい","優美な","エレガントな","若々しい","スポーティな","洗練された","知的な","情熱的な","ドラマチックな",
+"魅惑的な","艶っぽい","野性的な","エスニックな","高級な","本格的な","りりしい","マニッシュな","正統な","気高い",
+"シャープな","モダンな"
+];
+
+// 分類ルール（簡易版）
+const softList = ["甘い","かわいい","ロマンチックな","可憐な","やさしい","ゆったりとした","みずみずしい","うるおいのある","清楚な"];
+const hardList = ["シャープな","モダンな","りりしい","マニッシュな","正統な","気高い","本格的な"];
+const middleHSList = ["エレガントな","優美な","高級な","洗練された","知的な"];
+
+const warmList = ["甘い","かわいい","ロマンチックな","元気な","楽しい","情熱的な","野性的な","エスニックな"];
+const coolList = ["さわやかな","シャープな","モダンな","知的な","洗練された"];
+const middleWCList = ["エレガントな","優美な","高級な","正統な","気高い"];
+
+// チェックボックス生成
+const container = document.getElementById("checkboxes");
+words.forEach(word => {
+  const label = document.createElement("label");
+  label.innerHTML = `<input type="checkbox" value="${word}"> ${word}<br>`;
+  container.appendChild(label);
+});
+
+function analyze() {
+  const checked = document.querySelectorAll("input:checked");
+
+  let hard=0, soft=0, middleHS=0;
+  let warm=0, cool=0, middleWC=0;
+
+  checked.forEach(item => {
+    const w = item.value;
+
+    // ハード・ソフト
+    if (softList.includes(w)) soft++;
+    else if (hardList.includes(w)) hard++;
+    else middleHS++;
+
+    // ウォーム・クール
+    if (warmList.includes(w)) warm++;
+    else if (coolList.includes(w)) cool++;
+    else middleWC++;
+  });
+
+  document.getElementById("result").innerHTML =
+    `ハード:${hard} ソフト:${soft} 中間:${middleHS}<br>
+     ウォーム:${warm} クール:${cool} 中間:${middleWC}`;
+
+  drawChart(hard, soft, warm, cool);
+}
+
+function drawChart(hard, soft, warm, cool) {
+  const canvas = document.getElementById("chart");
+  const ctx = canvas.getContext("2d");
+
+  ctx.clearRect(0,0,300,300);
+
+  // 軸
+  ctx.beginPath();
+  ctx.moveTo(150,0);
+  ctx.lineTo(150,300);
+  ctx.moveTo(0,150);
+  ctx.lineTo(300,150);
+  ctx.stroke();
+
+  let x = (cool - warm) * 30;
+  let y = (hard - soft) * 30;
+
+  ctx.fillStyle = "red";
+  ctx.beginPath();
+  ctx.arc(150 + x, 150 - y, 6, 0, Math.PI*2);
+  ctx.fill();
+}
+</script>
+
+</body>
+</html>
